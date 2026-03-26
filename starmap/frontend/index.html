@@ -1,0 +1,1116 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Galaxmeet · 摄影观星助手</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css"/>
+<script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06070f;--surface:rgba(255,255,255,.04);--surface2:rgba(255,255,255,.07);--surface3:rgba(255,255,255,.11);
+  --border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);
+  --text:#f0f0f2;--text2:#9898a6;--text3:#4a4a56;
+  --primary:#4f8ef7;--primary-soft:rgba(79,142,247,.15);
+  --green:#34d399;--green-soft:rgba(52,211,153,.12);
+  --yellow:#fbbf24;--yellow-soft:rgba(251,191,36,.12);
+  --red:#f87171;--red-soft:rgba(248,113,113,.12);
+  --purple:#a78bfa;--purple-soft:rgba(167,139,250,.12);
+  --orange:#fb923c;--orange-soft:rgba(251,146,60,.12);
+  --r:14px;--r-sm:10px;--blur:blur(28px) saturate(180%);
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans','Noto Sans SC',-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',Arial,sans-serif;height:100vh;overflow:hidden;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;letter-spacing:-.015em;font-size:14px}
+.topbar{height:56px;background:rgba(6,7,15,.82);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 22px;gap:14px;z-index:1000;flex-shrink:0}
+.logo{font-size:16px;font-weight:700;letter-spacing:-.5px;color:var(--text);white-space:nowrap;display:flex;align-items:center;gap:8px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--primary);box-shadow:0 0 10px rgba(79,142,247,.7);flex-shrink:0}
+.search-wrap{flex:1;max-width:360px;position:relative}
+.search-wrap input{width:100%;padding:9px 36px 9px 15px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;outline:none;transition:border-color .2s,background .2s;font-family:inherit}
+.search-wrap input::placeholder{color:var(--text3)}
+.search-wrap input:focus{border-color:rgba(59,130,246,.5);background:var(--surface3)}
+.search-icon{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--text3);cursor:pointer;font-size:16px;user-select:none;line-height:1}
+#searchDrop{position:absolute;top:calc(100% + 6px);left:0;right:0;background:rgba(28,28,30,.95);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--border2);border-radius:var(--r);max-height:300px;overflow-y:auto;z-index:2000;display:none;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+.sr-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;display:flex;align-items:center;gap:10px}
+.sr-item:last-child{border-bottom:none}
+.sr-item:hover,.sr-item.sel{background:var(--surface2)}
+.sr-icon{font-size:13px;flex-shrink:0;opacity:.7}
+.sr-name{font-size:14px;font-weight:500}
+.sr-addr{font-size:12px;color:var(--text3);margin-top:2px}
+.topbar-right{display:flex;gap:6px;align-items:center;margin-left:auto}
+.icon-btn{width:36px;height:36px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s;position:relative;flex-shrink:0;user-select:none}
+.icon-btn:hover{background:var(--surface3);border-color:var(--border2);color:var(--text)}
+.icon-btn.active{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
+.hov-wrap{position:relative}
+.hov-bridge{position:absolute;top:100%;left:0;right:0;height:8px;z-index:2999}
+.hov-wrap .hov-drop{position:absolute;top:calc(100% + 10px);right:0;background:rgba(16,17,28,.97);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--border2);border-radius:var(--r);padding:6px;z-index:3000;display:none;box-shadow:0 24px 64px rgba(0,0,0,.8);min-width:230px}
+.hov-wrap:hover .hov-bridge,.hov-wrap:hover .hov-drop{display:block}
+.dd-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;padding:2px 8px}
+.dd-item{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:400;transition:background .12s;color:var(--text);position:relative}
+.dd-item:hover{background:var(--surface2)}
+.dd-icon{font-size:18px;width:24px;text-align:center;flex-shrink:0;opacity:.9}
+.dd-arrow{margin-left:auto;color:var(--text3);font-size:12px}
+.dd-sep{height:1px;background:var(--border);margin:5px 0}
+.dd-row{display:flex;justify-content:space-between;align-items:center;padding:9px 10px;gap:10px;border-radius:10px}
+.dd-row:hover{background:var(--surface2)}
+.dd-label{font-size:14px;font-weight:400}
+.toggle{width:38px;height:22px;border-radius:11px;background:var(--text3);cursor:pointer;position:relative;transition:background .25s;border:0;flex-shrink:0}
+.toggle.on{background:var(--green)}
+.toggle::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:3px;transition:left .25s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle.on::after{left:19px}
+.dd-btn{width:100%;padding:7px 8px;border-radius:9px;border:none;background:var(--surface2);color:var(--text2);cursor:pointer;font-size:12px;font-weight:400;margin-top:4px;transition:background .15s;text-align:left;font-family:inherit}
+.dd-btn:hover{background:var(--surface3)}
+.dd-btn.danger{color:var(--red)}
+.submenu{position:absolute;right:calc(100% + 8px);top:0;background:rgba(16,17,28,.97);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--border2);border-radius:var(--r);padding:6px;min-width:170px;box-shadow:0 24px 64px rgba(0,0,0,.8);display:none;z-index:4000}
+.dd-item:hover>.submenu{display:block}
+.user-info-row{display:flex;align-items:center;gap:12px;padding:8px 8px 12px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#4f8ef7,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.user-name{font-size:14px;font-weight:600}
+.user-email{font-size:12px;color:var(--text3);margin-top:2px}
+.main{flex:1;display:flex;overflow:hidden;position:relative}
+#map{flex:1;height:100%;min-width:0}
+#sidePanel{width:340px;background:rgba(6,7,15,.9);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;transition:width .3s cubic-bezier(.4,0,.2,1);position:relative}
+#sidePanel.collapsed{width:0;border-left:none}
+#panelTab{position:absolute;left:-26px;top:50%;transform:translateY(-50%);width:26px;height:56px;background:rgba(7,8,16,.88);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--border);border-right:none;border-radius:10px 0 0 10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:var(--text3);z-index:10;opacity:0;transition:opacity .2s,color .15s}
+#sidePanel:hover #panelTab,#panelTab:hover{opacity:1}
+#panelTab:hover{color:var(--text2)}
+.panel-header{padding:12px 14px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.panel-tabs{display:flex;gap:2px;flex:1;background:var(--surface2);border-radius:9px;padding:3px}
+.ptab{flex:1;padding:6px 10px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;color:var(--text3);transition:all .15s;border:0;background:none;white-space:nowrap;font-family:inherit}
+.ptab.active{background:var(--surface3);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.panel-acts{display:flex;gap:4px;flex-shrink:0}
+.card-nav{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 0;flex-shrink:0}
+.nav-arrow{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
+.nav-arrow:hover{background:var(--surface3);border-color:var(--border2);color:var(--text)}
+.nav-arrow:disabled{opacity:.25;cursor:not-allowed}
+.nav-dot{width:5px;height:5px;border-radius:50%;background:var(--text3);transition:all .15s}
+.nav-dot.on{background:var(--primary);width:14px;border-radius:3px}
+.panel-body{flex:1;overflow:hidden;position:relative}
+#cardPages{display:flex;height:100%;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.card-page{min-width:100%;width:100%;height:100%;overflow-y:auto;padding:12px 12px 20px;flex-shrink:0}
+.pt-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:8px}
+.pt-card-head{padding:13px 14px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--border);gap:8px}
+.pt-name{font-size:15px;font-weight:600;line-height:1.4}
+.pt-coord{font-size:11px;color:var(--text3);margin-top:4px;font-variant-numeric:tabular-nums}
+.pt-actions{display:flex;gap:3px;flex-shrink:0;margin-top:1px}
+.pt-act{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text3);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.pt-act:hover{background:var(--surface2);color:var(--text2);border-color:var(--border2)}
+.pt-act.del:hover{color:var(--red);border-color:rgba(248,113,113,.3);background:var(--red-soft)}
+.pt-act.fav-on{color:var(--yellow);border-color:rgba(251,191,36,.3);background:var(--yellow-soft)}
+.pt-body{padding:12px}
+.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.data-cell{background:var(--surface2);border-radius:var(--r-sm);padding:12px 13px;border:1px solid var(--border)}
+.dc-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.dc-val{font-size:24px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.dc-unit{font-size:12px;color:var(--text3);margin-left:2px;font-weight:400}
+.dc-sub{font-size:11px;color:var(--text3);margin-top:5px;font-weight:400}
+.dc-val.good{color:var(--green)}.dc-val.warn{color:var(--yellow)}.dc-val.bad{color:var(--red)}.dc-val.purple{color:var(--purple)}
+.timeline{margin-bottom:10px}
+.tl-label{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.tl-bar{height:4px;border-radius:2px;background:var(--surface3);position:relative;overflow:hidden;margin-bottom:5px}
+.tl-fill{height:100%;border-radius:2px;position:absolute}
+.tl-sun{background:linear-gradient(90deg,var(--orange),var(--yellow))}
+.tl-times{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums}
+.bortle-bar{display:flex;gap:2px;margin:6px 0 4px}
+.bortle-seg{flex:1;height:4px;border-radius:2px}
+.bortle-label{font-size:11px;color:var(--text3);display:flex;justify-content:space-between}
+.share-row-btn{width:100%;display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;border:none;background:none;color:var(--text);cursor:pointer;font-size:13px;font-family:inherit;transition:background .12s;text-align:left}
+.share-row-btn:hover{background:var(--surface2)}
+.share-row-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.share-row-label{flex:1;font-weight:500}
+.share-row-arrow{color:var(--text3);font-size:16px;line-height:1}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:5000;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:rgba(12,13,22,.98);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--border2);border-radius:22px;padding:28px;width:100%;max-width:400px;box-shadow:0 40px 100px rgba(0,0,0,.8);position:relative;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:19px;font-weight:700;margin-bottom:22px;letter-spacing:-.3px}
+.modal-tabs{display:flex;gap:3px;margin-bottom:18px;background:var(--surface2);border-radius:10px;padding:3px}
+.modal-tab{flex:1;padding:7px;border-radius:8px;border:0;background:none;color:var(--text3);cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;font-family:inherit}
+.modal-tab.active{background:var(--surface3);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px;display:block;letter-spacing:.1px}
+.form-input{width:100%;padding:11px 14px;border-radius:11px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;outline:none;transition:border-color .2s,background .2s;font-family:inherit}
+.form-input:focus{border-color:var(--primary);background:var(--surface3)}
+.form-input::placeholder{color:var(--text3)}
+.form-row{display:flex;gap:8px}
+.form-row .form-input{flex:1}
+.send-code-btn{padding:10px 13px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--primary);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;transition:all .15s;flex-shrink:0;font-family:inherit}
+.send-code-btn:hover{background:var(--surface3)}
+.send-code-btn:disabled{color:var(--text3);cursor:not-allowed}
+.submit-btn{width:100%;padding:13px;border-radius:12px;border:0;background:var(--primary);color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;transition:opacity .15s,transform .1s;font-family:inherit;letter-spacing:.1px}
+.submit-btn:hover{opacity:.9}
+.submit-btn:active{transform:scale(.98)}
+.form-error{font-size:12px;color:var(--red);margin-top:8px;min-height:16px}
+.form-switch{font-size:12px;color:var(--text3);text-align:center;margin-top:12px}
+.form-switch a{color:var(--primary);cursor:pointer;font-weight:500}
+.modal-close{position:absolute;top:18px;right:18px;width:30px;height:30px;border-radius:50%;border:none;background:var(--surface3);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;transition:all .15s}
+.modal-close:hover{color:var(--text)}
+.profile-avatar-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:20px}
+.profile-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#4f8ef7,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;margin-bottom:10px;overflow:hidden;flex-shrink:0}
+.profile-avatar img{width:80px;height:80px;border-radius:50%;object-fit:cover;display:block}
+.profile-avatar-hint{font-size:11px;color:var(--text3);font-weight:400}
+.fstar{font-size:24px;cursor:pointer;opacity:.25;transition:opacity .15s;color:var(--yellow)}
+.fstar.on{opacity:1}
+.hist-item{display:flex;align-items:center;gap:11px;padding:11px 10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;transition:background .1s;border-radius:10px}
+.hist-item:hover{background:var(--surface2)}
+.avatar-upload-wrap{position:relative;display:inline-block;cursor:pointer}
+.avatar-upload-wrap:hover .avatar-overlay{opacity:1}
+.avatar-overlay{position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;font-size:10px;color:#fff;font-weight:600}
+.avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.cropper-view-box,.cropper-face{border-radius:50%}
+.cropper-view-box{outline:2px solid var(--primary);outline-color:rgba(59,130,246,.8)}
+#toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(16px);background:rgba(22,23,36,.97);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--border2);border-radius:22px;padding:10px 22px;font-size:14px;font-weight:500;z-index:9999;opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.success{color:var(--green)}
+#toast.error{color:var(--red)}
+.spinner{display:inline-block;width:12px;height:12px;border:1.5px solid var(--surface3);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:40px 16px;color:var(--text3)}
+.empty-icon{font-size:42px;margin-bottom:12px;opacity:.6}
+.empty-text{font-size:13px;line-height:1.9;font-weight:400}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- topbar -->
+<div class="topbar">
+  <div class="logo"><div class="logo-dot"></div>Galaxmeet</div>
+  <div class="search-wrap">
+    <input id="searchInput" placeholder="输入地名即可搜索…" autocomplete="off" spellcheck="false"/>
+    <span class="search-icon" id="btnSearch">⌕</span>
+    <div id="searchDrop"></div>
+  </div>
+  <div class="topbar-right">
+    <button class="icon-btn" id="btnLocate" title="定位到我">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" stroke-dasharray="3 2"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
+    </button>
+    <button class="icon-btn" id="btnLock" title="锁定/解锁视角">
+      <svg id="lockIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    </button>
+    <div class="hov-wrap">
+      <button class="icon-btn" title="设置">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <div class="hov-bridge"></div>
+      <div class="hov-drop" id="settingsPanel">
+        <div class="dd-title">显示设置</div>
+        <div class="dd-row"><span class="dd-label">温度 °F</span><button class="toggle" id="toggleUnit"></button></div>
+        <div class="dd-row"><span class="dd-label">24小时制</span><button class="toggle on" id="toggle24h"></button></div>
+        <div class="dd-row"><span class="dd-label">卫星标注层</span><button class="toggle on" id="toggleLabel"></button></div>
+        <div class="dd-sep"></div>
+        <button class="dd-btn danger" id="btnClearAll">🗑 清空所有地点</button>
+      </div>
+    </div>
+    <div class="hov-wrap">
+      <button class="icon-btn" id="btnUser" title="账号" style="width:36px;height:36px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      </button>
+      <div class="hov-bridge"></div>
+      <div class="hov-drop" id="userMenu" style="min-width:220px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- modals -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('authModal')">✕</button>
+    <div class="modal-title">欢迎使用 Galaxmeet</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-auth="login">登录</button>
+      <button class="modal-tab" data-auth="register">注册</button>
+    </div>
+    <div id="authForm"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="profileModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('profileModal')">✕</button>
+    <div class="modal-title">个人资料</div>
+    <div id="profileForm"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="changePwModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('changePwModal')">✕</button>
+    <div class="modal-title">修改密码</div>
+    <div id="changePwForm"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="feedbackModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('feedbackModal')">✕</button>
+    <div class="modal-title">用户反馈与意见</div>
+    <div style="display:flex;gap:6px;margin-bottom:12px" id="feedbackStars">
+      <span class="fstar" data-v="1">★</span><span class="fstar" data-v="2">★</span>
+      <span class="fstar" data-v="3">★</span><span class="fstar" data-v="4">★</span><span class="fstar" data-v="5">★</span>
+    </div>
+    <div class="form-group"><label class="form-label">反馈内容</label><textarea class="form-input" id="feedbackText" rows="4" placeholder="告诉我们你的想法…"></textarea></div>
+    <button class="submit-btn" id="feedbackSubmit">提交反馈</button>
+  </div>
+</div>
+<div class="modal-overlay" id="historyModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('historyModal')">✕</button>
+    <div class="modal-title">历史记录</div>
+    <div id="historyList"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="favModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('favModal')">✕</button>
+    <div class="modal-title">我的收藏</div>
+    <div id="favList"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="shareModal">
+  <div class="modal" style="max-width:300px;padding:20px">
+    <button class="modal-close" onclick="closeModal('shareModal')">✕</button>
+    <div class="modal-title" style="font-size:15px;margin-bottom:6px">分享地点</div>
+    <div id="shareInfo" style="font-size:12px;color:var(--text3);margin-bottom:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <button class="share-row-btn" onclick="doShare('copy')">
+        <span class="share-row-icon" style="background:var(--primary-soft);color:var(--primary)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+        <span class="share-row-label">复制链接</span><span class="share-row-arrow">›</span>
+      </button>
+      <button class="share-row-btn" onclick="doShare('text')">
+        <span class="share-row-icon" style="background:var(--green-soft);color:var(--green)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
+        <span class="share-row-label">复制文字</span><span class="share-row-arrow">›</span>
+      </button>
+      <button class="share-row-btn" onclick="doShare('file')">
+        <span class="share-row-icon" style="background:var(--orange-soft);color:var(--orange)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+        <span class="share-row-label">导出文件</span><span class="share-row-arrow">›</span>
+      </button>
+      <button class="share-row-btn" onclick="doShare('qr')">
+        <span class="share-row-icon" style="background:var(--purple-soft);color:var(--purple)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg></span>
+        <span class="share-row-label">生成二维码</span><span class="share-row-arrow">›</span>
+      </button>
+    </div>
+    <div id="shareQR" style="margin-top:14px;text-align:center;display:none"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="cropModal">
+  <div class="modal" style="max-width:420px">
+    <button class="modal-close" onclick="closeCropModal()">✕</button>
+    <div class="modal-title">裁剪头像</div>
+    <div style="width:100%;background:#000;border-radius:10px;overflow:hidden;margin-bottom:14px;max-height:340px;display:flex;align-items:center;justify-content:center">
+      <img id="cropImg" src="" alt="crop" style="max-width:100%;display:block"/>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;justify-content:center">
+      <button class="dd-btn" style="width:auto;padding:6px 14px" onclick="_cropZoom(0.1)">+ 放大</button>
+      <button class="dd-btn" style="width:auto;padding:6px 14px" onclick="_cropZoom(-0.1)">- 缩小</button>
+      <button class="dd-btn" style="width:auto;padding:6px 14px" onclick="_cropRotate()">↻ 旋转</button>
+    </div>
+    <button class="submit-btn" id="cropConfirm">确认裁剪并上传</button>
+  </div>
+</div>
+
+<!-- main -->
+<div class="main">
+  <div id="map"></div>
+  <div id="sidePanel">
+    <div id="panelTab">◀</div>
+    <div class="panel-header">
+      <div class="panel-tabs">
+        <button class="ptab active" data-tab="points">地点</button>
+      </div>
+
+    </div>
+    <div class="card-nav" id="cardNav" style="display:none;padding:4px 10px 0">
+      <button class="nav-arrow" id="navPrev">‹</button>
+      <div style="display:flex;gap:5px;align-items:center" id="navDots"></div>
+      <button class="nav-arrow" id="navNext">›</button>
+    </div>
+    <div class="panel-body">
+      <div id="cardPages">
+        <div class="card-page" id="page-empty">
+          <div class="empty-state">
+            <div class="empty-icon">🌌</div>
+            <div class="empty-text">点击地图或搜索地点<br/>获取摄影 / 观星参数</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const API="http://127.0.0.1:8003";
+const AMAP_KEY="8be337053e092994b64fdbe81879acba";
+
+function toast(msg,type="",dur=2800){const el=document.getElementById("toast");el.textContent=msg;el.className="show "+(type||"");clearTimeout(el._t);el._t=setTimeout(()=>el.className="",dur);}
+function closeModal(id){document.getElementById(id).classList.remove("open")}
+function openModal(id){document.getElementById(id).classList.add("open")}
+document.querySelectorAll(".modal-overlay").forEach(o=>{o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("open");});});
+
+let _token=localStorage.getItem("sm_token")||"";
+let _user=JSON.parse(localStorage.getItem("sm_user")||"null");
+function authHeaders(){return _token?{Authorization:"Bearer "+_token}:{}}
+async function apiFetch(path,opts={}){
+  const res=await fetch(API+path,{headers:{"Content-Type":"application/json",...authHeaders(),...(opts.headers||{})},...opts});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok)throw new Error(data.detail||"请求失败");
+  return data;
+}
+function jsonp(url,timeout=8000){
+  return new Promise((resolve,reject)=>{
+    const cb="_gm_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+    const s=document.createElement("script");
+    const t=setTimeout(()=>{cleanup();reject(new Error("超时"));},timeout);
+    function cleanup(){clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);}
+    s.src=url+(url.includes("?")?"&":"?")+"callback="+cb+"&output=JSON";
+    window[cb]=data=>{cleanup();resolve(data);};
+    s.onerror=()=>{cleanup();reject(new Error("网络错误"));};
+    document.head.appendChild(s);
+  });
+}
+
+const map=L.map('map',{zoomControl:false,preferCanvas:true}).setView([35,105],5);
+L.control.zoom({position:'bottomright'}).addTo(map);
+
+// 自动定位
+(function initLocate(){
+  if(!navigator.geolocation)return;
+  navigator.geolocation.getCurrentPosition(
+    pos=>{map.setView([pos.coords.latitude,pos.coords.longitude],13);},
+    ()=>{},
+    {timeout:8000,maximumAge:60000}
+  );
+})();
+
+// 底图：全球 Esri + 高德（中国区域）
+const tileGlobal=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'© Esri'}).addTo(map);
+const tileBase=L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18,attribution:'© 高德卫星'});
+let tileLabel=L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}',{subdomains:'1234',maxZoom:18,opacity:.9});
+
+function inChina(lat,lng){return lat>18&&lat<54&&lng>73&&lng<135;}
+function updateTileSource(){
+  const c=map.getCenter();
+  if(inChina(c.lat,c.lng)){
+    if(!map.hasLayer(tileBase))tileBase.addTo(map);
+    if(CFG.label&&!map.hasLayer(tileLabel))tileLabel.addTo(map);
+  } else {
+    if(map.hasLayer(tileBase))map.removeLayer(tileBase);
+    if(map.hasLayer(tileLabel))map.removeLayer(tileLabel);
+  }
+}
+map.on('moveend',updateTileSource);
+
+const CFG={fahrenheit:false,h24:true,label:true};
+
+function escH(s){return String(s||"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function fmtTemp(c){return CFG.fahrenheit?Math.round(c*9/5+32)+"°F":Math.round(c)+"°C"}
+function fmtTime(iso){if(!iso)return"--";const d=new Date(iso);return CFG.h24?d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false}):d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:true})}
+function dayFrac(iso){if(!iso)return 0;const d=new Date(iso);return(d.getHours()*60+d.getMinutes())/(24*60)}
+
+// 最佳观测时间：日落后1.5h 到 日出前1.5h，取中点为子夜
+function bestObsTime(sunriseIso, sunsetIso){
+  if(!sunriseIso||!sunsetIso)return{start:"--",end:"--",peak:"--"};
+  const sr=new Date(sunriseIso), ss=new Date(sunsetIso);
+  const start=new Date(ss.getTime()+90*60000);
+  const end=new Date(sr.getTime()-90*60000);
+  // 子夜 = 中点
+  const peak=new Date((start.getTime()+end.getTime()+24*3600000)/2);
+  // 如果end < start（极端情况），直接用子夜
+  const peakH=peak.getHours(), peakM=peak.getMinutes();
+  const fmt=t=>fmtTime(t.toISOString());
+  return{start:fmt(start),end:fmt(end),peak:`${String(peakH).padStart(2,"0")}:${String(peakM).padStart(2,"0")}`};
+}
+function moonPhase(date){
+  const known=new Date("2000-01-06T18:14:00Z"),cycle=29.530588853;
+  const phase=(((date-known)/(1000*60*60*24)%cycle)+cycle)%cycle,pct=phase/cycle;
+  let name,emoji;
+  if(pct<.03||pct>.97){name="新月";emoji="🌑"}else if(pct<.22){name="娥眉月";emoji="🌒"}
+  else if(pct<.28){name="上弦月";emoji="🌓"}else if(pct<.47){name="盈凸月";emoji="🌔"}
+  else if(pct<.53){name="满月";emoji="🌕"}else if(pct<.72){name="亏凸月";emoji="🌖"}
+  else if(pct<.78){name="下弦月";emoji="🌗"}else{name="残月";emoji="🌘"}
+  return{name,emoji,illum:Math.round(Math.abs(Math.cos(pct*2*Math.PI))*100)};
+}
+function estimateBortle(lat,lng){
+  const cities=[[39.9,116.4,21],[31.2,121.5,24],[23.1,113.3,15],[30.6,104.1,16],[22.5,114.1,13],[29.6,106.5,8],[32.1,118.8,8],[30.3,120.2,7],[36.1,120.4,9],[34.3,108.9,8]];
+  let min=9;
+  for(const[clat,clng,pop]of cities){const d=Math.sqrt((lat-clat)**2+(lng-clng)**2)*111;const b=Math.max(1,Math.min(9,9-Math.log2(pop*80/Math.max(d,5)+1)*1.2));if(b<min)min=b;}
+  return Math.round(min);
+}
+function bortleDesc(b){
+  const d=["","极暗天空","真正暗天","农村天空","农村/郊区","郊区天空","明亮郊区","郊区/城市","城市天空","市中心"];
+  const c=["","#34d399","#3b82f6","#a5d6ff","#d2a8ff","#fb923c","#fbbf24","#f87171","#f87171","#f87171"];
+  return{desc:d[b]||"未知",color:c[b]||"#55555e"};
+}
+function wmoDesc(code){
+  if(code===0)return{text:"晴空万里",icon:"☀️"};if(code<=2)return{text:"少云",icon:"🌤️"};
+  if(code===3)return{text:"多云",icon:"☁️"};if(code<=49)return{text:"雾/霾",icon:"🌫️"};
+  if(code<=59)return{text:"毛毛雨",icon:"🌦️"};if(code<=69)return{text:"雨",icon:"🌧️"};
+  if(code<=79)return{text:"雪",icon:"❄️"};if(code<=84)return{text:"阵雨",icon:"🌦️"};
+  return{text:"雷暴",icon:"⛈️"};
+}
+function windDir(deg){return["北","东北","东","东南","南","西南","西","西北"][Math.round(deg/45)%8]}
+function visClass(km){return km>=20?"good":km>=10?"":km>=5?"warn":"bad"}
+function cloudClass(pct){return pct<=20?"good":pct<=50?"warn":"bad"}
+
+// ── 历史 & 收藏 ──────────────────────────────────────────────
+let _history=JSON.parse(localStorage.getItem("sm_history")||"[]");
+let _favs=JSON.parse(localStorage.getItem("sm_favs")||"[]");
+function saveHistory(pt){
+  _history=_history.filter(h=>!(Math.abs(h.lat-pt.lat)<0.0001&&Math.abs(h.lng-pt.lng)<0.0001));
+  _history.unshift({...pt,ts:Date.now()});
+  if(_history.length>50)_history=_history.slice(0,50);
+  localStorage.setItem("sm_history",JSON.stringify(_history));
+}
+function isFav(lat,lng){return _favs.some(f=>Math.abs(f.lat-lat)<0.0001&&Math.abs(f.lng-lng)<0.0001)}
+function toggleFav(lat,lng,name){
+  if(isFav(lat,lng)){_favs=_favs.filter(f=>!(Math.abs(f.lat-lat)<0.0001&&Math.abs(f.lng-lng)<0.0001));toast("已取消收藏");}
+  else{_favs.unshift({lat,lng,name,ts:Date.now()});toast("已收藏 ★","success");}
+  localStorage.setItem("sm_favs",JSON.stringify(_favs));
+  renderPoints();
+}
+
+// ── fetchPointData ────────────────────────────────────────────
+async function fetchPointData(lat,lng,name){
+  const pt={lat,lng,name,loading:true,data:null,err:null};
+  addPoint(pt);
+  try{
+    const [wx,geo]=await Promise.all([
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,cloud_cover,visibility&hourly=temperature_2m,cloud_cover,visibility&daily=sunrise,sunset,precipitation_sum&timezone=auto&forecast_days=1`).then(r=>r.json()),
+      (async()=>{
+        try{
+          if(inChina(lat,lng)){
+            const r=await jsonp(`https://restapi.amap.com/v3/geocode/regeo?key=${AMAP_KEY}&location=${lng},${lat}&radius=500&extensions=base`);
+            return r.regeocode?.formatted_address||name;
+          } else {
+            // BigDataCloud: 免费、无需key、国内可访问
+            const r=await Promise.race([
+              fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=zh`).then(r=>r.json()),
+              new Promise((_,rej)=>setTimeout(()=>rej(),4000))
+            ]);
+            if(r&&(r.city||r.locality||r.countryName)){
+              const parts=[r.locality||r.city,r.principalSubdivision,r.countryName].filter(Boolean);
+              return parts.join(", ");
+            }
+            return name;
+          }
+        }catch{return name;}
+      })()
+    ]);
+    const c=wx.current,d=wx.daily;
+    const bortle=estimateBortle(lat,lng);
+    const moon=moonPhase(new Date());
+    const wmo=wmoDesc(c.weather_code);
+    const sunrise=d.sunrise?.[0],sunset=d.sunset?.[0];
+    const sunriseFrac=dayFrac(sunrise),sunsetFrac=dayFrac(sunset);
+    const nightLen=Math.round((1-(sunsetFrac-sunriseFrac))*24*60);
+    const vis=c.visibility/1000;
+    const wind=c.wind_speed_10m;
+    const humid=c.relative_humidity_2m;
+    const cloud=c.cloud_cover;
+    const score=Math.round(Math.max(0,Math.min(100,
+      (bortle<=3?100:bortle<=5?75:bortle<=7?45:20)*0.35+
+      (cloud<=10?100:cloud<=30?75:cloud<=60?40:10)*0.30+
+      (vis>=20?100:vis>=10?75:vis>=5?40:10)*0.20+
+      (humid<=50?100:humid<=70?70:40)*0.15
+    )));
+    pt.loading=false;
+    // 拍摄时段计算
+    const srDate=sunrise?new Date(sunrise):null;
+    const ssDate=sunset?new Date(sunset):null;
+    const goldenAM=srDate?{start:new Date(srDate-30*60000),end:new Date(srDate+30*60000)}:null;
+    const goldenPM=ssDate?{start:new Date(ssDate-30*60000),end:new Date(ssDate+30*60000)}:null;
+    const blueAM=srDate?{start:new Date(srDate-60*60000),end:new Date(srDate-15*60000)}:null;
+    const bluePM=ssDate?{start:new Date(ssDate+15*60000),end:new Date(ssDate+60*60000)}:null;
+    // 太阳正午方位（北半球朝南，南半球朝北）
+    const sunDir=lat>=0?"正南":"正北";
+    const sunAz=lat>=0?180:0;
+    // 日出日落方位（根据纬度和季节粗算，用赤纬近似）
+    const dayOfYear=Math.round((new Date()-new Date(new Date().getFullYear(),0,0))/(1000*60*60*24));
+    const decl=23.45*Math.sin((360/365*(dayOfYear-81))*Math.PI/180); // 太阳赤纬
+    const cosH0=-Math.tan(lat*Math.PI/180)*Math.tan(decl*Math.PI/180);
+    const h0=Math.abs(cosH0)<=1?Math.acos(cosH0)*180/Math.PI:90;
+    const srAz=Math.round(90-h0); // 日出方位角偏北量（负=偏北，正=偏南）
+    const srDir=srAz<-10?"东北":srAz>10?"东南":"正东";
+    const ssDir=srAz<-10?"西北":srAz>10?"西南":"正西";
+    pt.data={addr:geo,temp:c.temperature_2m,feels:c.apparent_temperature,wmo,wind,windDir:windDir(c.wind_direction_10m),windDeg:c.wind_direction_10m,humid,cloud,vis,bortle,moon,sunrise,sunset,sunriseFrac,sunsetFrac,nightLen,score,goldenAM,goldenPM,blueAM,bluePM,sunDir,srDir,ssDir};
+    pt.name=geo||name;
+    saveHistory({lat,lng,name:pt.name});
+  }catch(e){pt.loading=false;pt.err=e.message||"获取失败";}
+  renderPoints();
+}
+
+// ── Points 管理 ───────────────────────────────────────────────
+let _points=[];
+let _curIdx=0;
+let _markers={};
+
+function updateNav(){
+  const nav=document.getElementById("cardNav");
+  const dots=document.getElementById("navDots");
+  const prev=document.getElementById("navPrev");
+  const next=document.getElementById("navNext");
+  if(_points.length<=1){nav.style.display="none";return;}
+  nav.style.display="flex";
+  dots.innerHTML=_points.map((_,i)=>`<div class="nav-dot${i===_curIdx?" on":""}"></div>`).join("");
+  prev.disabled=_curIdx===0;
+  next.disabled=_curIdx===_points.length-1;
+}
+function renderCard(pt,idx){
+  if(pt.loading)return`<div class="pt-card"><div class="pt-card-head"><div><div class="pt-name">${escH(pt.name)}</div><div class="pt-coord">${pt.lat.toFixed(5)}, ${pt.lng.toFixed(5)}</div></div></div><div class="pt-body" style="text-align:center;padding:24px 0;color:var(--text3)"><span class="spinner"></span>加载中…</div></div>`;
+  if(pt.err)return`<div class="pt-card"><div class="pt-card-head"><div><div class="pt-name">${escH(pt.name)}</div></div><div class="pt-actions"><button class="pt-act del" onclick="removePoint(${idx})">✕</button></div></div><div class="pt-body" style="color:var(--red);font-size:12px;padding:12px">${escH(pt.err)}</div></div>`;
+  const d=pt.data;
+  const fav=isFav(pt.lat,pt.lng);
+  const bd=bortleDesc(d.bortle);
+  const scoreColor=d.score>=75?"good":d.score>=50?"warn":"bad";
+  return`<div class="pt-card">
+  <div class="pt-card-head">
+    <div style="min-width:0">
+      <div class="pt-name">${escH(pt.name)}</div>
+      <div class="pt-coord">${pt.lat.toFixed(5)}, ${pt.lng.toFixed(5)}</div>
+    </div>
+    <div class="pt-actions">
+      <button class="pt-act${fav?" fav-on":""}" onclick="toggleFav(${pt.lat},${pt.lng},'${escH(pt.name).replace(/'/g,"\\'")}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="${fav?"currentColor":"none"}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2l2.9 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l7.1-1.01L12 2z"/></svg></button>
+      <button class="pt-act" onclick="openShareModal(${idx})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
+      <button class="pt-act del" onclick="removePoint(${idx})">✕</button>
+    </div>
+  </div>
+  <div class="pt-body">
+    <div class="data-grid">
+      <div class="data-cell"><div class="dc-label">观星评分</div><div class="dc-val ${scoreColor}">${d.score}<span class="dc-unit">/100</span></div><div class="dc-sub">${d.score>=75?"适合观星":d.score>=50?"一般":"不适合"}</div></div>
+      <div class="data-cell"><div class="dc-label">天气</div><div class="dc-val" style="font-size:14px">${d.wmo.icon} ${escH(d.wmo.text)}</div><div class="dc-sub">${fmtTemp(d.temp)} / 体感 ${fmtTemp(d.feels)}</div></div>
+      <div class="data-cell"><div class="dc-label">云量</div><div class="dc-val ${cloudClass(d.cloud)}">${d.cloud}<span class="dc-unit">%</span></div><div class="dc-sub">${d.cloud<=20?"晴朗":d.cloud<=50?"部分遮蔽":"多云遮蔽"}</div></div>
+      <div class="data-cell"><div class="dc-label">能见度</div><div class="dc-val ${visClass(d.vis)}">${d.vis.toFixed(0)}<span class="dc-unit">km</span></div><div class="dc-sub">${d.vis>=20?"极佳":d.vis>=10?"良好":d.vis>=5?"一般":"较差"}</div></div>
+      <div class="data-cell"><div class="dc-label">月相</div><div class="dc-val" style="font-size:18px">${d.moon.emoji}</div><div class="dc-sub">${d.moon.name} · ${d.moon.illum}%</div></div>
+      <div class="data-cell"><div class="dc-label">湿度</div><div class="dc-val ${d.humid<=60?"good":"warn"}">${d.humid}<span class="dc-unit">%</span></div><div class="dc-sub">风 ${d.wind.toFixed(0)}m/s ${d.windDir}</div></div>
+    </div>
+    <div class="data-grid" style="grid-template-columns:1fr">
+      <div class="data-cell"><div class="dc-label">最佳观测时间</div>
+        ${(()=>{const obs=bestObsTime(d.sunrise,d.sunset);const moonOk=d.moon.illum<=30;return`<div style="display:flex;align-items:baseline;gap:6px"><div class="dc-val" style="font-size:18px">${obs.peak}</div><div style="font-size:11px;color:var(--text3)">${obs.start} – ${obs.end}</div></div><div class="dc-sub">${moonOk?"月光较弱，适合深空":"月光较强，建议月落后"}</div>`;})()}
+      </div>
+    </div>
+    <div class="data-grid" style="grid-template-columns:1fr">
+      <div class="data-cell"><div class="dc-label">光污染 (Bortle)</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div class="dc-val" style="color:${bd.color}">${d.bortle}</div>
+          <div style="font-size:12px;color:var(--text2)">${bd.desc}</div>
+        </div>
+        <div class="bortle-bar">${[1,2,3,4,5,6,7,8,9].map(i=>`<div class="bortle-seg" style="background:${i<=d.bortle?bd.color:'var(--surface3)'}"></div>`).join("")}</div>
+        <div class="bortle-label"><span>1 极暗</span><span>9 市区</span></div>
+      </div>
+    </div>
+    <div class="timeline">
+      <div class="tl-label">🌅 日出日落</div>
+      <div class="tl-bar"><div class="tl-fill tl-sun" style="left:${d.sunriseFrac*100}%;width:${(d.sunsetFrac-d.sunriseFrac)*100}%"></div></div>
+      <div class="tl-times"><span>日出 ${fmtTime(d.sunrise)}</span><span>夜长 ${Math.floor(d.nightLen/60)}h${d.nightLen%60}m</span><span>日落 ${fmtTime(d.sunset)}</span></div>
+    </div>
+    <div class="data-grid" style="grid-template-columns:1fr;margin-top:8px">
+      <div class="data-cell">
+        <div class="dc-label" style="margin-bottom:10px">最佳拍摄时段</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--orange);font-weight:500">黄金时段</span>
+            <span style="font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums">${d.goldenAM?fmtTime(d.goldenAM.start)+"–"+fmtTime(d.goldenAM.end):"--"} · ${d.goldenPM?fmtTime(d.goldenPM.start)+"–"+fmtTime(d.goldenPM.end):"--"}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--primary);font-weight:500">蓝调时段</span>
+            <span style="font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums">${d.blueAM?fmtTime(d.blueAM.start)+"–"+fmtTime(d.blueAM.end):"--"} · ${d.bluePM?fmtTime(d.bluePM.start)+"–"+fmtTime(d.bluePM.end):"--"}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="data-grid" style="margin-top:8px">
+      <div class="data-cell">
+        <div class="dc-label">日出方向</div>
+        <div class="dc-val" style="font-size:20px">${d.srDir}</div>
+        <div class="dc-sub">朝${d.srDir}拍摄迎光</div>
+      </div>
+      <div class="data-cell">
+        <div class="dc-label">日落方向</div>
+        <div class="dc-val" style="font-size:20px">${d.ssDir}</div>
+        <div class="dc-sub">朝${d.ssDir}拍摄逆光</div>
+      </div>
+      <div class="data-cell">
+        <div class="dc-label">正午光源</div>
+        <div class="dc-val" style="font-size:20px">${d.sunDir}</div>
+        <div class="dc-sub">避免正午顶光</div>
+      </div>
+      <div class="data-cell">
+        <div class="dc-label">风向</div>
+        <div class="dc-val" style="font-size:20px">${d.windDir}</div>
+        <div class="dc-sub">${d.wind.toFixed(0)}m/s · ${d.wind<=3?"适合长曝光":d.wind<=8?"注意防抖":"风大慎用长焦"}</div>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+function makeCardPage(idx){
+  const div=document.createElement("div");
+  div.className="card-page";
+  div.id="page-"+idx;
+  div.innerHTML=renderCard(_points[idx],idx);
+  return div;
+}
+function addPoint(pt){
+  _points.push(pt);
+  _curIdx=_points.length-1;
+  const pages=document.getElementById("cardPages");
+  const empty=document.getElementById("page-empty");
+  if(empty)empty.remove();
+  pages.appendChild(makeCardPage(_curIdx));
+  goToCard(_curIdx);
+  updateNav();
+  // marker
+  const mk=L.circleMarker([pt.lat,pt.lng],{radius:7,color:"#3b82f6",fillColor:"#3b82f6",fillOpacity:.85,weight:2}).addTo(map);
+  mk.bindTooltip(pt.name,{permanent:false,direction:"top",className:"leaflet-tooltip-dark"});
+  _markers[_points.length-1]=mk;
+}
+function removePoint(idx){
+  if(_markers[idx]){map.removeLayer(_markers[idx]);delete _markers[idx];}
+  _points.splice(idx,1);
+  // rebuild pages
+  const pages=document.getElementById("cardPages");
+  pages.innerHTML="";
+  if(_points.length===0){
+    const empty=document.createElement("div");
+    empty.className="card-page";empty.id="page-empty";
+    empty.innerHTML=`<div class="empty-state"><div class="empty-icon">🌌</div><div class="empty-text">点击地图或搜索地点<br/>获取摄影 / 观星参数</div></div>`;
+    pages.appendChild(empty);
+    _curIdx=0;
+  } else {
+    _points.forEach((_,i)=>pages.appendChild(makeCardPage(i)));
+    _curIdx=Math.min(_curIdx,_points.length-1);
+    goToCard(_curIdx);
+  }
+  updateNav();
+}
+function renderPoints(){
+  _points.forEach((pt,i)=>{
+    const page=document.getElementById("page-"+i);
+    if(page)page.innerHTML=renderCard(pt,i);
+  });
+}
+function goToCard(idx){
+  _curIdx=idx;
+  const pages=document.getElementById("cardPages");
+  pages.style.transform=`translateX(-${idx*100}%)`;
+  updateNav();
+}
+
+// ── 搜索 ──────────────────────────────────────────────────────
+let _searchTimer=null;
+const searchInput=document.getElementById("searchInput");
+const searchDrop=document.getElementById("searchDrop");
+let _srItems=[],_srSel=-1;
+async function doSearch(q){
+  if(!q.trim()){searchDrop.style.display="none";return;}
+  searchDrop.innerHTML='<div class="sr-item"><div><div class="sr-name" style="color:var(--text3)">搜索中…</div></div></div>';
+  searchDrop.style.display="block";
+  function showResults(items){
+    if(!items.length){searchDrop.innerHTML='<div class="sr-item"><div><div class="sr-name" style="color:var(--text3)">未找到相关地点</div></div></div>';return;}
+    _srItems=items;_srSel=-1;
+    searchDrop.innerHTML=_srItems.map((p,i)=>`<div class="sr-item" data-i="${i}"><div><div class="sr-name">${escH(p.name)}</div><div class="sr-addr">${escH(p.addr)}</div></div></div>`).join("");
+    searchDrop.style.display="block";
+    searchDrop.querySelectorAll(".sr-item").forEach(el=>{
+      el.addEventListener("click",()=>{
+        const p=_srItems[+el.dataset.i];
+        map.setView([p.lat,p.lng],13);
+        fetchPointData(p.lat,p.lng,p.name);
+        searchDrop.style.display="none";searchInput.value="";
+      });
+    });
+  }
+  // 带超时的 fetch
+  function fetchT(url,ms=5000){
+    return Promise.race([
+      fetch(url).then(r=>r.json()),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),ms))
+    ]);
+  }
+  // 并发：Photon(全球) + 高德(中国)，谁先成功用谁
+  const photonP=fetchT(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=8&lang=zh`,5000)
+    .then(data=>{
+      if(!data?.features?.length)return null;
+      return data.features.map(f=>{
+        const p=f.properties;
+        const name=p.name||p.city||p.country||"未知";
+        const parts=[p.city,p.state,p.country].filter(Boolean);
+        return{name,addr:parts.join(", "),lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0]};
+      });
+    }).catch(()=>null);
+  const amapP=new Promise(resolve=>{
+    jsonp(`https://restapi.amap.com/v3/place/text?key=${AMAP_KEY}&keywords=${encodeURIComponent(q)}&offset=8&page=1&extensions=base`,5000)
+      .then(r=>{
+        const items=(r.pois||[]).map(p=>({name:p.name,addr:p.address||p.cityname||"",lat:parseFloat(p.location.split(",")[1]),lng:parseFloat(p.location.split(",")[0])}));
+        resolve(items.length?items:null);
+      }).catch(()=>resolve(null));
+  });
+  // 等两个都完成，优先用结果更多的
+  const [photonRes,amapRes]=await Promise.all([photonP,amapP]);
+  const combined=[];
+  if(photonRes)combined.push(...photonRes);
+  // 高德结果去重后追加（避免中国地点重复）
+  if(amapRes){
+    for(const a of amapRes){
+      if(!combined.some(c=>Math.abs(c.lat-a.lat)<0.01&&Math.abs(c.lng-a.lng)<0.01))
+        combined.push(a);
+    }
+  }
+  if(combined.length){showResults(combined.slice(0,10));return;}
+  searchDrop.innerHTML='<div class="sr-item"><div><div class="sr-name" style="color:var(--text3)">未找到相关地点，请换个关键词</div></div></div>';
+}
+searchInput.addEventListener("input",e=>{clearTimeout(_searchTimer);_searchTimer=setTimeout(()=>doSearch(e.target.value),350);});
+searchInput.addEventListener("keydown",e=>{
+  const items=searchDrop.querySelectorAll(".sr-item");
+  if(e.key==="ArrowDown"){_srSel=Math.min(_srSel+1,items.length-1);items.forEach((el,i)=>el.classList.toggle("sel",i===_srSel));e.preventDefault();}
+  else if(e.key==="ArrowUp"){_srSel=Math.max(_srSel-1,0);items.forEach((el,i)=>el.classList.toggle("sel",i===_srSel));e.preventDefault();}
+  else if(e.key==="Enter"&&_srSel>=0){items[_srSel].click();}
+  else if(e.key==="Escape"){searchDrop.style.display="none";}
+});
+document.getElementById("btnSearch").addEventListener("click",()=>doSearch(searchInput.value));
+document.addEventListener("click",e=>{if(!e.target.closest(".search-wrap"))searchDrop.style.display="none";});
+
+// ── 地图交互 ──────────────────────────────────────────────────
+let _locked=false;
+map.on("click",e=>{
+  if(_locked)return;
+  fetchPointData(e.latlng.lat,e.latlng.lng,"自定义地点");
+});
+document.getElementById("btnLock").addEventListener("click",function(){
+  _locked=!_locked;
+  document.getElementById("lockIcon").innerHTML=_locked
+    ?'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
+    :'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>';
+  this.classList.toggle("active",_locked);
+  toast(_locked?"视角已锁定，点击地图不添加地点":"视角已解锁");
+});
+document.getElementById("btnLocate").addEventListener("click",()=>{
+  if(!navigator.geolocation){toast("浏览器不支持定位","error");return;}
+  navigator.geolocation.getCurrentPosition(
+    pos=>{map.setView([pos.coords.latitude,pos.coords.longitude],13);toast("已定位到当前位置","success");},
+    ()=>toast("定位失败，请检查权限","error"),
+    {timeout:8000,maximumAge:30000}
+  );
+});
+
+// ── 设置面板 ──────────────────────────────────────────────────
+document.getElementById("toggleUnit").addEventListener("click",function(){
+  CFG.fahrenheit=!CFG.fahrenheit;this.classList.toggle("on",CFG.fahrenheit);renderPoints();
+});
+document.getElementById("toggle24h").addEventListener("click",function(){
+  CFG.h24=!CFG.h24;this.classList.toggle("on",CFG.h24);renderPoints();
+});
+document.getElementById("toggleLabel").addEventListener("click",function(){
+  CFG.label=!CFG.label;this.classList.toggle("on",CFG.label);
+  if(CFG.label){if(!map.hasLayer(tileLabel))tileLabel.addTo(map);}
+  else{if(map.hasLayer(tileLabel))map.removeLayer(tileLabel);}
+});
+document.getElementById("btnClearAll").addEventListener("click",()=>{
+  if(!_points.length)return toast("没有地点可清空");
+  _points.forEach((_,i)=>{if(_markers[i])map.removeLayer(_markers[i]);});
+  _points=[];_markers={};_curIdx=0;
+  const pages=document.getElementById("cardPages");
+  pages.innerHTML=`<div class="card-page" id="page-empty"><div class="empty-state"><div class="empty-icon">🌌</div><div class="empty-text">点击地图或搜索地点<br/>获取摄影 / 观星参数</div></div></div>`;
+  updateNav();toast("已清空所有地点");
+});
+
+// ── 面板 tab ──────────────────────────────────────────────────
+document.querySelectorAll(".ptab").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".ptab").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+  });
+});
+
+// ── 侧边栏折叠 ────────────────────────────────────────────────
+document.getElementById("panelTab").addEventListener("click",()=>{
+  const p=document.getElementById("sidePanel");
+  p.classList.toggle("collapsed");
+  document.getElementById("panelTab").textContent=p.classList.contains("collapsed")?"▶":"◀";
+});
+
+// ── 导航箭头 ──────────────────────────────────────────────────
+document.getElementById("navPrev").addEventListener("click",()=>{if(_curIdx>0)goToCard(_curIdx-1);});
+document.getElementById("navNext").addEventListener("click",()=>{if(_curIdx<_points.length-1)goToCard(_curIdx+1);});
+
+// ── 分享 ──────────────────────────────────────────────────────
+let _shareIdx=0;
+function openShareModal(idx){
+  _shareIdx=idx;
+  const pt=_points[idx];
+  document.getElementById("shareInfo").textContent=`${pt.name}  ${pt.lat.toFixed(5)}, ${pt.lng.toFixed(5)}`;
+  document.getElementById("shareQR").style.display="none";
+  openModal("shareModal");
+}
+
+function doShare(type){
+  const pt=_points[_shareIdx];
+  if(!pt)return;
+  const url=`https://www.google.com/maps?q=${pt.lat},${pt.lng}`;
+  const text=`📍 ${pt.name}\n坐标：${pt.lat.toFixed(5)}, ${pt.lng.toFixed(5)}\n${url}`;
+  if(type==="copy"){navigator.clipboard.writeText(url).then(()=>toast("链接已复制","success")).catch(()=>toast("复制失败","error"));}
+  else if(type==="text"){navigator.clipboard.writeText(text).then(()=>toast("文字已复制","success")).catch(()=>toast("复制失败","error"));}
+  else if(type==="file"){
+    const blob=new Blob([text],{type:"text/plain"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`${pt.name}.txt`;a.click();
+    toast("文件已导出","success");
+  }
+  else if(type==="qr"){
+    const qrDiv=document.getElementById("shareQR");
+    qrDiv.style.display="block";
+    qrDiv.innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}" style="border-radius:8px"/>`;
+  }
+}
+
+
+
+// ── Auth ──────────────────────────────────────────────────────
+let _authTab="login";
+document.querySelectorAll("[data-auth]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    _authTab=btn.dataset.auth;
+    document.querySelectorAll("[data-auth]").forEach(b=>b.classList.toggle("active",b.dataset.auth===_authTab));
+    renderAuthForm();
+  });
+});
+function openAuthModal(){openModal("authModal");renderAuthForm();}
+function renderAuthForm(){
+  const el=document.getElementById("authForm");
+  if(_authTab==="login"){
+    el.innerHTML=`
+      <div class="form-group"><label class="form-label">邮箱</label><input class="form-input" id="loginEmail" type="email" placeholder="your@email.com"/></div>
+      <div class="form-group"><label class="form-label">密码</label><input class="form-input" id="loginPw" type="password" placeholder="••••••••"/></div>
+      <div class="form-error" id="loginErr"></div>
+      <button class="submit-btn" id="loginBtn">登录</button>
+      <div class="form-switch">没有账号？<a onclick="_authTab='register';document.querySelector('[data-auth=register]').click()">注册</a></div>`;
+    document.getElementById("loginBtn").addEventListener("click",async()=>{
+      const email=document.getElementById("loginEmail").value.trim();
+      const pw=document.getElementById("loginPw").value;
+      const err=document.getElementById("loginErr");
+      if(!email||!pw){err.textContent="请填写完整";return;}
+      try{
+        const d=await apiFetch("/api/auth/login",{method:"POST",body:JSON.stringify({email,password:pw})});
+        _token=d.token;_user=d.user;
+        localStorage.setItem("sm_token",_token);localStorage.setItem("sm_user",JSON.stringify(_user));
+        closeModal("authModal");renderUserMenu();toast("登录成功","success");
+      }catch(e){err.textContent=e.message;}
+    });
+  } else {
+    el.innerHTML=`
+      <div class="form-group"><label class="form-label">邮箱</label>
+        <div class="form-row">
+          <input class="form-input" id="regEmail" type="email" placeholder="your@email.com"/>
+          <button class="send-code-btn" id="sendCodeBtn">发送验证码</button>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">验证码</label><input class="form-input" id="regCode" placeholder="6位验证码"/></div>
+      <div class="form-group"><label class="form-label">用户名</label><input class="form-input" id="regName" placeholder="昵称"/></div>
+      <div class="form-group"><label class="form-label">密码</label><input class="form-input" id="regPw" type="password" placeholder="至少8位"/></div>
+      <div class="form-error" id="regErr"></div>
+      <button class="submit-btn" id="regBtn">注册</button>
+      <div class="form-switch">已有账号？<a onclick="_authTab='login';document.querySelector('[data-auth=login]').click()">登录</a></div>`;
+    let _cdTimer=null;
+    document.getElementById("sendCodeBtn").addEventListener("click",async()=>{
+      const email=document.getElementById("regEmail").value.trim();
+      const btn=document.getElementById("sendCodeBtn");
+      if(!email){document.getElementById("regErr").textContent="请输入邮箱";return;}
+      btn.disabled=true;
+      try{
+        await apiFetch("/api/auth/send-code",{method:"POST",body:JSON.stringify({email})});
+        toast("验证码已发送","success");
+        let s=60;btn.textContent=s+"s";
+        _cdTimer=setInterval(()=>{s--;btn.textContent=s+"s";if(s<=0){clearInterval(_cdTimer);btn.disabled=false;btn.textContent="重新发送";}},1000);
+      }catch(e){document.getElementById("regErr").textContent=e.message;btn.disabled=false;}
+    });
+    document.getElementById("regBtn").addEventListener("click",async()=>{
+      const email=document.getElementById("regEmail").value.trim();
+      const code=document.getElementById("regCode").value.trim();
+      const name=document.getElementById("regName").value.trim();
+      const pw=document.getElementById("regPw").value;
+      const err=document.getElementById("regErr");
+      if(!email||!code||!name||!pw){err.textContent="请填写完整";return;}
+      try{
+        const d=await apiFetch("/api/auth/register",{method:"POST",body:JSON.stringify({email,code,username:name,password:pw})});
+        _token=d.token;_user=d.user;
+        localStorage.setItem("sm_token",_token);localStorage.setItem("sm_user",JSON.stringify(_user));
+        closeModal("authModal");renderUserMenu();toast("注册成功","success");
+      }catch(e){err.textContent=e.message;}
+    });
+  }
+}
+
+// ── 个人资料 ──────────────────────────────────────────────────
+function openProfileModal(){
+  if(!_user)return openAuthModal();
+  const el=document.getElementById("profileForm");
+  const av=_user.avatar?`<img src="${escH(_user.avatar)}" alt="avatar"/>`:`<span>${(_user.username||"U")[0].toUpperCase()}</span>`;
+  el.innerHTML=`
+    <div class="profile-avatar-wrap">
+      <div class="avatar-upload-wrap" onclick="document.getElementById('avatarFileInput').click()">
+        <div class="profile-avatar">${av}</div>
+        <div class="avatar-overlay">更换</div>
+      </div>
+      <input type="file" id="avatarFileInput" accept="image/*" style="display:none"/>
+      <div class="profile-avatar-hint">点击更换头像</div>
+    </div>
+    <div class="form-group"><label class="form-label">用户名</label><input class="form-input" id="profileName" value="${escH(_user.username||"")}"/></div>
+    <div class="form-group"><label class="form-label">邮箱</label><input class="form-input" value="${escH(_user.email||"")}" disabled style="opacity:.5"/></div>
+    <div class="form-error" id="profileErr"></div>
+    <button class="submit-btn" id="profileSave">保存</button>`;
+  document.getElementById("avatarFileInput").addEventListener("change",e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{openCropModal(ev.target.result);};
+    reader.readAsDataURL(file);
+  });
+  document.getElementById("profileSave").addEventListener("click",async()=>{
+    const name=document.getElementById("profileName").value.trim();
+    const err=document.getElementById("profileErr");
+    if(!name){err.textContent="用户名不能为空";return;}
+    try{
+      const d=await apiFetch("/api/me",{method:"PATCH",body:JSON.stringify({username:name})});
+      _user=d;localStorage.setItem("sm_user",JSON.stringify(_user));
+      renderUserMenu();toast("已保存","success");closeModal("profileModal");
+    }catch(e){err.textContent=e.message;}
+  });
+  openModal("profileModal");
+}
+
+// ── 修改密码 ──────────────────────────────────────────────────
+function openChangePwModal(){
+  if(!_user)return openAuthModal();
+  document.getElementById("changePwForm").innerHTML=`
+    <div class="form-group"><label class="form-label">当前密码</label><input class="form-input" id="cpOld" type="password" placeholder="••••••••"/></div>
+    <div class="form-group"><label class="form-label">新密码</label><input class="form-input" id="cpNew" type="password" placeholder="至少8位"/></div>
+    <div class="form-group"><label class="form-label">确认新密码</label><input class="form-input" id="cpNew2" type="password" placeholder="再次输入"/></div>
+    <div class="form-error" id="cpErr"></div>
+    <button class="submit-btn" id="cpBtn">修改密码</button>`;
+  document.getElementById("cpBtn").addEventListener("click",async()=>{
+    const old=document.getElementById("cpOld").value;
+    const nw=document.getElementById("cpNew").value;
+    const nw2=document.getElementById("cpNew2").value;
+    const err=document.getElementById("cpErr");
+    if(!old||!nw||!nw2){err.textContent="请填写完整";return;}
+    if(nw!==nw2){err.textContent="两次密码不一致";return;}
+    if(nw.length<8){err.textContent="密码至少8位";return;}
+    try{
+      await apiFetch("/api/me/password",{method:"POST",body:JSON.stringify({old_password:old,new_password:nw})});
+      toast("密码已修改","success");closeModal("changePwModal");
+    }catch(e){err.textContent=e.message;}
+  });
+  openModal("changePwModal");
+}
+
+// ── 反馈 ──────────────────────────────────────────────────────
+let _feedbackRating=0;
+document.getElementById("feedbackStars").addEventListener("click",e=>{
+  const star=e.target.closest(".fstar");if(!star)return;
+  _feedbackRating=+star.dataset.v;
+  document.querySelectorAll(".fstar").forEach(s=>s.classList.toggle("on",+s.dataset.v<=_feedbackRating));
+});
+document.getElementById("feedbackSubmit").addEventListener("click",async()=>{
+  const text=document.getElementById("feedbackText").value.trim();
+  if(!text){toast("请输入反馈内容","error");return;}
+  try{
+    await apiFetch("/api/feedback",{method:"POST",body:JSON.stringify({rating:_feedbackRating,content:text})});
+    toast("感谢你的反馈 ✨","success");closeModal("feedbackModal");
+    document.getElementById("feedbackText").value="";_feedbackRating=0;
+    document.querySelectorAll(".fstar").forEach(s=>s.classList.remove("on"));
+  }catch(e){toast(e.message,"error");}
+});
+
+// ── 历史 & 收藏弹窗 ───────────────────────────────────────────
+function openHistoryModal(){
+  const el=document.getElementById("historyList");
+  if(!_history.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">🕐</div><div class="empty-text">暂无历史记录</div></div>`;openModal("historyModal");return;}
+  el.innerHTML=_history.map(h=>`<div class="hist-item" onclick="map.setView([${h.lat},${h.lng}],13);fetchPointData(${h.lat},${h.lng},'${escH(h.name).replace(/'/g,"\\'")}');closeModal('historyModal')">
+    <span style="font-size:14px">📍</span>
+    <div style="min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(h.name)}</div>
+    <div style="font-size:10px;color:var(--text3)">${new Date(h.ts).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div></div>
+  </div>`).join("");
+  openModal("historyModal");
+}
+function openFavModal(){
+  const el=document.getElementById("favList");
+  if(!_favs.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">★</div><div class="empty-text">暂无收藏</div></div>`;openModal("favModal");return;}
+  el.innerHTML=_favs.map(f=>`<div class="hist-item" onclick="map.setView([${f.lat},${f.lng}],13);fetchPointData(${f.lat},${f.lng},'${escH(f.name).replace(/'/g,"\\'")}');closeModal('favModal')">
+    <span style="font-size:14px;color:var(--yellow)">★</span>
+    <div style="min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(f.name)}</div>
+    <div style="font-size:10px;color:var(--text3)">${f.lat.toFixed(4)}, ${f.lng.toFixed(4)}</div></div>
+  </div>`).join("");
+  openModal("favModal");
+}
+
+// ── Avatar Crop ───────────────────────────────────────────────
+let _cropper=null;
+function openCropModal(src){
+  const img=document.getElementById("cropImg");
+  img.src=src;
+  if(_cropper){_cropper.destroy();_cropper=null;}
+  openModal("cropModal");
+  setTimeout(()=>{
+    _cropper=new Cropper(img,{aspectRatio:1,viewMode:1,dragMode:"move",autoCropArea:.8,cropBoxResizable:false,background:false});
+  },100);
+}
+function closeCropModal(){closeModal("cropModal");if(_cropper){_cropper.destroy();_cropper=null;}}
+function _cropZoom(r){if(_cropper)_cropper.zoom(r);}
+function _cropRotate(){if(_cropper)_cropper.rotate(90);}
+document.getElementById("cropConfirm").addEventListener("click",async()=>{
+  if(!_cropper)return;
+  const canvas=_cropper.getCroppedCanvas({width:256,height:256,imageSmoothingQuality:"high"});
+  canvas.toBlob(async blob=>{
+    const fd=new FormData();fd.append("file",blob,"avatar.jpg");
+    try{
+      const res=await fetch(API+"/api/me/avatar",{method:"POST",headers:{Authorization:"Bearer "+_token},body:fd});
+      const d=await res.json();
+      if(!res.ok)throw new Error(d.detail||"上传失败");
+      _user.avatar=d.avatar;localStorage.setItem("sm_user",JSON.stringify(_user));
+      closeCropModal();renderUserMenu();openProfileModal();
+      toast("头像已更新","success");
+    }catch(e){toast(e.message,"error");}
+  },"image/jpeg",.9);
+});
+
+// ── userMenu ──────────────────────────────────────────────────
+function renderUserMenu(){
+  const el=document.getElementById("userMenu");
+  if(_user){
+    const av=_user.avatar
+      ?`<img src="${escH(_user.avatar)}" alt="av" style="width:36px;height:36px;border-radius:50%;object-fit:cover"/>`
+      :`<div class="avatar" style="width:36px;height:36px;font-size:14px">${(_user.username||"U")[0].toUpperCase()}</div>`;
+    el.innerHTML=`
+      <div class="user-info-row">${av}<div><div class="user-name">${escH(_user.username||"")}</div><div class="user-email">${escH(_user.email||"")}</div></div></div>
+      <div class="dd-item" onclick="openProfileModal()">个人资料<span class="dd-arrow">›</span></div>
+      <div class="dd-item" onclick="openHistoryModal()">历史记录<span class="dd-arrow">›</span></div>
+      <div class="dd-item" onclick="openFavModal()">我的收藏<span class="dd-arrow">›</span></div>
+      <div class="dd-item" onclick="openModal('feedbackModal')">反馈意见<span class="dd-arrow">›</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" style="position:relative">账号与安全<span class="dd-arrow">›</span>
+        <div class="submenu">
+          <div class="dd-item" onclick="openChangePwModal()">修改密码</div>
+          <div class="dd-sep"></div>
+          <div class="dd-item" onclick="doLogout()" style="color:var(--red)">退出登录</div>
+        </div>
+      </div>`;
+  } else {
+    el.innerHTML=`
+      <div style="padding:8px 6px 10px;font-size:12px;color:var(--text3)">登录后可保存记录、收藏地点</div>
+      <div class="dd-item" onclick="openAuthModal()">登录 / 注册<span class="dd-arrow">›</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="openHistoryModal()">历史记录<span class="dd-arrow">›</span></div>
+      <div class="dd-item" onclick="openFavModal()">我的收藏<span class="dd-arrow">›</span></div>
+      <div class="dd-item" onclick="openModal('feedbackModal')">反馈意见<span class="dd-arrow">›</span></div>`;
+  }
+}
+function doLogout(){
+  _token="";_user=null;
+  localStorage.removeItem("sm_token");localStorage.removeItem("sm_user");
+  renderUserMenu();toast("已退出登录");
+}
+renderUserMenu();
+
+</script>
+</body>
+</html>
